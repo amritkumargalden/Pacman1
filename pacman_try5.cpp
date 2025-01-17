@@ -5,6 +5,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <limits>
+#include <sstream> // Add this header for stringstream
 
 // Maze dimensions
 const int ROWS = 11;
@@ -41,6 +42,13 @@ int level2[ROWS][COLS] = {
     {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
+
+// Function to convert int to string
+std::string intToString(int num) {
+    std::stringstream ss;
+    ss << num;
+    return ss.str();
+}
 
 // Player class
 class Player {
@@ -110,7 +118,7 @@ public:
     }
 
     void render() {
-        system("cls");
+        std::cout << "\033[2J\033[1;1H"; // Clear the screen and move the cursor to top-left
         for (int i = 0; i < ROWS; ++i) {
             for (int j = 0; j < COLS; ++j) {
                 if (player.x == j && player.y == i) std::cout << "\033[1;33mP \033[0m";
@@ -122,6 +130,12 @@ public:
             std::cout << "\n";
         }
         std::cout << "Score: " << score << " | Lives: " << lives << "\n";
+    }
+
+    void showEndMessage(const std::string& message) {
+        std::cout << message << "\n";
+        std::cout << "Press any key to return to the main menu...\n";
+        _getch();
     }
 
     void update() {
@@ -136,8 +150,8 @@ public:
         if (player.x == enemy.x && player.y == enemy.y) {
             lives--;
             if (lives == 0) {
-                std::cout << "Game Over! Final Score: " << score << "\n";
-                exit(0);
+                showEndMessage("Game Over! Final Score: " + intToString(score));
+                return;
             }
             loadLevel(currentLevel);
         }
@@ -145,8 +159,8 @@ public:
         if (totalCollectibles == 0) {
             currentLevel++;
             if (currentLevel > 2) {
-                std::cout << "Congratulations! You won with a score of " << score << "!\n";
-                exit(0);
+                showEndMessage("Congratulations! You won with a score of " + intToString(score) + "!");
+                return;
             }
             loadLevel(currentLevel);
         }
@@ -174,6 +188,7 @@ void showMenu() {
 }
 
 void showInstructions() {
+	system("cls");
     std::cout << "--- How to Play ---\n";
     std::cout << "- Use W/A/S/D to move Pacman\n";
     std::cout << "- Avoid the Ghost\n";
@@ -184,27 +199,36 @@ void showInstructions() {
     std::cin.get();
 }
 
+void tryagain(){
+	char a;
+	std::cout << "Invalid choice. Try again.\n";
+	a=getch();
+}
 int main() {
     while (true) {
+    	
+		system("cls");
         showMenu();
-        int choice;
-        std::cin >> choice;
-
+        char choice;
+        choice=getch();
         switch (choice) {
-            case 1: {
+            case '1': {
                 Game game;
                 game.play();
+                system("cls");
                 break;
             }
-            case 2:
+            case '2':
                 showInstructions();
                 break;
-            case 3:
+                
+            case '3':
                 std::cout << "Thanks for playing!\n";
                 return 0;
             default:
-                std::cout << "Invalid choice. Try again.\n";
+            	tryagain();
+            	break;
+                
         }
     }
 }
-
