@@ -10,6 +10,7 @@
 // Maze dimensions
 const int ROWS = 11;
 const int COLS = 11;
+const int MAX_GHOSTS = 10; // Maximum number of ghosts
 
 // Maze definition
 int maze[ROWS][COLS];
@@ -18,11 +19,11 @@ int maze[ROWS][COLS];
 int level1[ROWS][COLS] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
-    {1, 2, 1, 2, 1, 2, 1, 1, 1, 2, 1},
+    {1, 3, 1, 2, 1, 2, 1, 1, 1, 2, 1},
     {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
     {1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1},
-    {1, 2, 2, 2, 2, 3, 2, 2, 2, 2, 1},
-    {1, 2, 1, 1, 1, 1, 1, 4, 1, 2, 1},
+    {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1},
     {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
     {1, 2, 1, 2, 1, 1, 1, 2, 1, 2, 1},
     {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
@@ -31,10 +32,25 @@ int level1[ROWS][COLS] = {
 
 int level2[ROWS][COLS] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 1, 1, 2, 2, 2, 2, 1, 2, 2, 1},
+    {1, 4, 1, 2, 2, 2, 2, 1, 2, 2, 1},
     {1, 2, 1, 1, 1, 1, 2, 1, 1, 2, 1},
     {1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1},
-    {1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1},
+    {1, 3, 1, 1, 2, 1, 1, 1, 1, 2, 1},
+    {1, 2, 2, 2, 2, 3, 2, 2, 2, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 2, 1, 1, 1, 2, 1, 2, 1},
+    {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
+
+// Add more levels here
+int level3[ROWS][COLS] = {
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 2, 1, 2, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1},
     {1, 2, 2, 2, 2, 3, 2, 2, 2, 2, 1},
     {1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1},
     {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
@@ -74,17 +90,33 @@ public:
 class Enemy {
 public:
     int x, y;
+    bool stunned;
+    int stunEndTime; // Time when stun effect ends
 
-    Enemy(int startX, int startY) : x(startX), y(startY) {}
+    Enemy() : x(0), y(0), stunned(false), stunEndTime(0) {} // Default constructor
+    Enemy(int startX, int startY) : x(startX), y(startY), stunned(false), stunEndTime(0) {}
 
     void moveRandomly() {
-        int directions[4][2] = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
-        int randomDir = rand() % 4;
-        int newX = x + directions[randomDir][0];
-        int newY = y + directions[randomDir][1];
-        if (maze[newY][newX] != 1) {
-            x = newX;
-            y = newY;
+        if (!stunned) {
+            int directions[4][2] = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+            int randomDir = rand() % 4;
+            int newX = x + directions[randomDir][0];
+            int newY = y + directions[randomDir][1];
+            if (maze[newY][newX] != 1) {
+                x = newX;
+                y = newY;
+            }
+        }
+    }
+
+    void stun(int currentTime) {
+        stunned = true;
+        stunEndTime = currentTime + 100; // 10 seconds (100 * 100ms)
+    }
+
+    void checkStun(int currentTime) {
+        if (stunned && currentTime >= stunEndTime) {
+            stunned = false;
         }
     }
 };
@@ -93,13 +125,15 @@ public:
 class Game {
 public:
     Player player;
-    Enemy enemy;
+    Enemy enemies[MAX_GHOSTS]; // Array to handle multiple enemies
+    int numEnemies; // Number of active enemies
     int score;
     int lives;
     int totalCollectibles;
     int currentLevel;
+    int currentTime; // Game time in 100ms units
 
-    Game() : player(5, 5), enemy(6, 7), score(0), lives(3), currentLevel(1) {
+    Game() : player(5, 5), score(0), lives(3), currentLevel(1), numEnemies(1), currentTime(0) {
         srand(time(0));
         loadLevel(1);
     }
@@ -107,6 +141,7 @@ public:
     void loadLevel(int level) {
         if (level == 1) memcpy(maze, level1, sizeof(maze));
         else if (level == 2) memcpy(maze, level2, sizeof(maze));
+        else if (level == 3) memcpy(maze, level3, sizeof(maze));
 
         totalCollectibles = 0;
         for (int i = 0; i < ROWS; ++i)
@@ -114,7 +149,19 @@ public:
                 if (maze[i][j] == 2) totalCollectibles++;
 
         player.x = 5; player.y = 5;
-        enemy.x = 6; enemy.y = 7;
+        numEnemies = currentLevel; // Increase the number of enemies with each level
+        for (int i = 0; i < numEnemies; ++i) {
+            enemies[i] = Enemy(6, 7); // Initialize enemies
+        }
+    }
+
+    void resetPositions() {
+        player.x = 5;
+        player.y = 5;
+        for (int i = 0; i < numEnemies; ++i) {
+            enemies[i].x = 6;
+            enemies[i].y = 7;
+        }
     }
 
     void render() {
@@ -122,10 +169,22 @@ public:
         for (int i = 0; i < ROWS; ++i) {
             for (int j = 0; j < COLS; ++j) {
                 if (player.x == j && player.y == i) std::cout << "\033[1;33mP \033[0m";
-                else if (enemy.x == j && enemy.y == i) std::cout << "\033[1;31mE \033[0m";
-                else if (maze[i][j] == 1) std::cout << "\033[1;34m# \033[0m";
-                else if (maze[i][j] == 2) std::cout << "\033[1;32m. \033[0m";
-                else std::cout << "  ";
+                else {
+                    bool enemyPrinted = false;
+                    for (int k = 0; k < numEnemies; ++k) {
+                        if (enemies[k].x == j && enemies[k].y == i) {
+                            std::cout << (enemies[k].stunned ? "\033[1;35mS \033[0m" : "\033[1;31mE \033[0m");
+                            enemyPrinted = true;
+                            break;
+                        }
+                    }
+                    if (!enemyPrinted) {
+                        if (maze[i][j] == 1) std::cout << "\033[1;34m# \033[0m";
+                        else if (maze[i][j] == 2) std::cout << "\033[1;32m. \033[0m";
+                        else if (maze[i][j] == 3) std::cout << "\033[1;36mB \033[0m"; // Boost item
+                        else std::cout << "  ";
+                    }
+                }
             }
             std::cout << "\n";
         }
@@ -139,26 +198,39 @@ public:
     }
 
     void update() {
+        currentTime++; // Increment game time in 100ms units
+
         if (maze[player.y][player.x] == 2) {
             maze[player.y][player.x] = 0;
             score++;
             totalCollectibles--;
         }
 
-        enemy.moveRandomly();
-
-        if (player.x == enemy.x && player.y == enemy.y) {
-            lives--;
-            if (lives == 0) {
-                showEndMessage("Game Over! Final Score: " + intToString(score));
-                return;
+        // Check for boost item
+        if (maze[player.y][player.x] == 3) {
+            maze[player.y][player.x] = 0;
+            for (int i = 0; i < numEnemies; ++i) {
+                enemies[i].stun(currentTime); // Stun all enemies
             }
-            loadLevel(currentLevel);
+        }
+
+        for (int i = 0; i < numEnemies; ++i) {
+            enemies[i].checkStun(currentTime); // Check and update stun status
+            enemies[i].moveRandomly();
+            if (player.x == enemies[i].x && player.y == enemies[i].y && !enemies[i].stunned) {
+                lives--;
+                if (lives == 0) {
+                    showEndMessage("Game Over! Final Score: " + intToString(score));
+                    return;
+                }
+                resetPositions(); // Reset positions instead of reloading the level
+                break;
+            }
         }
 
         if (totalCollectibles == 0) {
             currentLevel++;
-            if (currentLevel > 2) {
+            if (currentLevel > 3) { // Update this if more levels are added
                 showEndMessage("Congratulations! You won with a score of " + intToString(score) + "!");
                 return;
             }
@@ -167,12 +239,13 @@ public:
     }
 
     void play() {
+        char direction = ' ';  // Initialize with a dummy direction
         while (lives > 0) {
             render();
             if (_kbhit()) {
-                char input = _getch();
-                player.move(input);
+                direction = _getch();  // Update direction on key press
             }
+            player.move(direction);
             update();
             Sleep(100);
         }
@@ -188,29 +261,30 @@ void showMenu() {
 }
 
 void showInstructions() {
-	system("cls");
+    system("cls");
     std::cout << "--- How to Play ---\n";
     std::cout << "- Use W/A/S/D to move Pacman\n";
-    std::cout << "- Avoid the Ghost\n";
+    std::cout << "- Avoid the Ghosts\n";
     std::cout << "- Collect all dots to progress levels\n";
+    std::cout << "- Collect boost items (B) to stun ghosts for 10 seconds\n";
     std::cout << "- You have 3 lives\n";
     std::cout << "Press Enter to continue...\n";
     std::cin.ignore();
     std::cin.get();
 }
 
-void tryagain(){
-	char a;
-	std::cout << "Invalid choice. Try again.\n";
-	a=getch();
+void tryagain() {
+    char a;
+    std::cout << "Invalid choice. Try again.\n";
+    a = getch();
 }
+
 int main() {
     while (true) {
-    	
-		system("cls");
+        system("cls");
         showMenu();
         char choice;
-        choice=getch();
+        choice = getch();
         switch (choice) {
             case '1': {
                 Game game;
@@ -221,14 +295,12 @@ int main() {
             case '2':
                 showInstructions();
                 break;
-                
             case '3':
                 std::cout << "Thanks for playing!\n";
                 return 0;
             default:
-            	tryagain();
-            	break;
-                
+                tryagain();
+                break;
         }
     }
 }
