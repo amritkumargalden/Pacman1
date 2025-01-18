@@ -58,6 +58,45 @@ int level3[ROWS][COLS] = {
     {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
+int level4[ROWS][COLS] = {
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 2, 1, 2, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1},
+    {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 2, 1, 1, 1, 2, 1, 2, 1},
+    {1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
+int level5[ROWS][COLS] = {
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 2, 1, 2, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1},
+    {1, 2, 2, 2, 2, 3, 2, 2, 2, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 2, 1, 1, 1, 2, 1, 2, 1},
+    {1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
+int level6[ROWS][COLS] = {
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 1, 1, 2, 2, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1},
+    {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1},
+    {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1},
+    {1, 2, 1, 2, 1, 1, 1, 2, 1, 2, 1},
+    {1, 3, 2, 2, 1, 2, 2, 2, 1, 2, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
 
 // Function to convert int to string
 std::string intToString(int num) {
@@ -165,31 +204,37 @@ public:
     }
 
     void render() {
-        std::cout << "\033[2J\033[1;1H"; // Clear the screen and move the cursor to top-left
-        for (int i = 0; i < ROWS; ++i) {
-            for (int j = 0; j < COLS; ++j) {
-                if (player.x == j && player.y == i) std::cout << "\033[1;33mP \033[0m";
-                else {
-                    bool enemyPrinted = false;
-                    for (int k = 0; k < numEnemies; ++k) {
-                        if (enemies[k].x == j && enemies[k].y == i) {
-                            std::cout << (enemies[k].stunned ? "\033[1;35mS \033[0m" : "\033[1;31mE \033[0m");
-                            enemyPrinted = true;
-                            break;
-                        }
-                    }
-                    if (!enemyPrinted) {
-                        if (maze[i][j] == 1) std::cout << "\033[1;34m# \033[0m";
-                        else if (maze[i][j] == 2) std::cout << "\033[1;32m. \033[0m";
-                        else if (maze[i][j] == 3) std::cout << "\033[1;36mB \033[0m"; // Boost item
-                        else std::cout << "  ";
+    std::ostringstream buffer; // Use an off-screen buffer
+    buffer << "\033[2J\033[1;1H"; // Clear the screen and move the cursor to top-left
+
+    for (int i = 0; i < ROWS; ++i) {
+        for (int j = 0; j < COLS; ++j) {
+            if (player.x == j && player.y == i) {
+                buffer << "\033[1;33mP \033[0m"; // Pac-Man
+            } else {
+                bool enemyPrinted = false;
+                for (int k = 0; k < numEnemies; ++k) {
+                    if (enemies[k].x == j && enemies[k].y == i) {
+                        buffer << (enemies[k].stunned ? "\033[1;35mS \033[0m" : "\033[1;31mE \033[0m");
+                        enemyPrinted = true;
+                        break;
                     }
                 }
+                if (!enemyPrinted) {
+                    if (maze[i][j] == 1) buffer << "\033[1;34m# \033[0m"; // Wall
+                    else if (maze[i][j] == 2) buffer << "\033[1;32m. \033[0m"; // Dot
+                    else if (maze[i][j] == 3) buffer << "\033[1;36mB \033[0m"; // Boost
+                    else buffer << "  "; // Empty space
+                }
             }
-            std::cout << "\n";
         }
-        std::cout << "Score: " << score << " | Lives: " << lives << "\n";
+        buffer << "\n";
     }
+    buffer << "Score: " << score << " | Lives: " << lives << "\n";
+
+    std::cout << buffer.str(); // Output everything at once
+}
+
 
     void showEndMessage(const std::string& message) {
         std::cout << message << "\n";
